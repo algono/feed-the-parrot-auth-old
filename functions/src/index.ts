@@ -23,7 +23,7 @@ export const auth = functions.https.onRequest(async (request, response) => {
     const codeQuery = await admin.firestore().collection('auth-codes').where('code', '==', hashedCode).limit(1).get();
     if (codeQuery.empty) {
       functions.logger.info("Bad code", {structuredData: true});
-      response.status(403).send('Bad code')
+      response.status(401).send('Bad code')
     } else {
       const codeDoc = codeQuery.docs[0];
       const codeData = codeDoc.data();
@@ -51,7 +51,7 @@ export const auth = functions.https.onRequest(async (request, response) => {
       } else {
         functions.logger.info("Code has expired", {structuredData: true});
         await codeDoc.ref.delete();
-        response.status(403).send('The code has expired.');
+        response.status(401).send('The code has expired.');
       }
     }
   } else {
