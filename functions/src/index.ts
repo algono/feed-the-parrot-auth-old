@@ -7,23 +7,25 @@ admin.initializeApp();
 
 import crypto = require('crypto');
 
+const { onCall, HttpsError } = functions.https;
+const { info } = functions.logger;
+
 // // Start writing Firebase Functions
 // // https://firebase.google.com/docs/functions/typescript
 
-// Command for testing: curl -X POST -H "Content-Type:application/json" https://us-central1-feedtheparrot-rss.cloudfunctions.net/auth -d '{"code":"1234"}'
-export const auth = functions.https.onRequest(async (request, response) => {
-  if (request.is('json') && request.body.code) {
-    const code : string = request.body.code;
-    functions.logger.info("Code received: " + code, {structuredData: true});
+export const signInWithAuthCode = onCall(async (data, context) => {
+  if (data.code && typeof data.code === 'string') {
+    const code : string = data.code;
+    info("Code received: " + code, {structuredData: true});
 
     const hashedCode = crypto.createHash('md5').update(code).digest('hex');
 
-    functions.logger.info("Hashed code: " + hashedCode, {structuredData: true});
+    info("Hashed code: " + hashedCode, {structuredData: true});
 
     const codeQuery = await admin.firestore().collection('auth-codes').where('code', '==', hashedCode).limit(1).get();
     if (codeQuery.empty) {
-      functions.logger.info("Bad code", {structuredData: true});
-      response.status(401).send('Bad code')
+      info("Bad code", {structuredData: true});
+      throw new HttpsError('unauthenticated','The code was not valid.');
     } else {
       const codeDoc = codeQuery.docs[0];
       const codeData = codeDoc.data();
@@ -31,30 +33,30 @@ export const auth = functions.https.onRequest(async (request, response) => {
       const expirationDateTimestamp: FirebaseFirestore.Timestamp = codeData.expirationDate;
       const expirationDate = expirationDateTimestamp.toDate();
 
-      functions.logger.info("Expiration date: " + JSON.stringify(expirationDate), {structuredData: true});
+      info("Expiration date: " + JSON.stringify(expirationDate), {structuredData: true});
       
       const now = new Date();
 
-      functions.logger.info("Current date: " + JSON.stringify(now), {structuredData: true});
+      info("Current date: " + JSON.stringify(now), {structuredData: true});
 
       // If the code has not expired yet, continue
       if (now < expirationDate) {
         if (hashedCode === codeData.code) {
-          functions.logger.info("Good code", {structuredData: true});
+          info("Good code", {structuredData: true});
           const token = await admin.auth().createCustomToken(codeData.uid);
           await codeDoc.ref.delete();
-          response.send(token);
+          return token;
         } else {
-          functions.logger.info("Good code according to database, bad code according to logic", {structuredData: true});
-          response.status(409).send('There was an error. Please try again.');
+          info("Good code according to database, bad code according to logic", {structuredData: true});
+          throw new HttpsError('internal', 'There was an error. Please try again.');
         }
       } else {
-        functions.logger.info("Code has expired", {structuredData: true});
+        info("Code has expired", {structuredData: true});
         await codeDoc.ref.delete();
-        response.status(401).send('The code has expired.');
+        throw new HttpsError('out-of-range', 'The code has expired.');
       }
     }
   } else {
-    response.status(400).send('Bad Request');
+    throw new HttpsError('invalid-argument', 'Bad Request. The function must be called with one string argument "code" containing the auth code.');
   }
 });
