@@ -5,8 +5,6 @@ import * as functions from 'firebase-functions';
 import admin = require('firebase-admin');
 admin.initializeApp();
 
-import crypto = require('crypto');
-
 const { onCall, HttpsError } = functions.https;
 const { info } = functions.logger;
 
@@ -18,11 +16,7 @@ export const signInWithAuthCode = onCall(async (data, context) => {
     const code : string = data.code;
     info("Code received: " + code, {structuredData: true});
 
-    const hashedCode = crypto.createHash('md5').update(code).digest('hex');
-
-    info("Hashed code: " + hashedCode, {structuredData: true});
-
-    const codeQuery = await admin.firestore().collection('auth-codes').where('code', '==', hashedCode).limit(1).get();
+    const codeQuery = await admin.firestore().collection('auth-codes').where('code', '==', code).limit(1).get();
     if (codeQuery.empty) {
       info("Bad code", {structuredData: true});
       throw new HttpsError('unauthenticated','The code was not valid.');
@@ -41,7 +35,7 @@ export const signInWithAuthCode = onCall(async (data, context) => {
 
       // If the code has not expired yet, continue
       if (now < expirationDate) {
-        if (hashedCode === codeData.code) {
+        if (code === codeData.code) {
           info("Good code", {structuredData: true});
           const token = await admin.auth().createCustomToken(codeData.uid);
           await codeDoc.ref.delete();
