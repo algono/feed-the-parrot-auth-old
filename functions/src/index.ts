@@ -37,7 +37,7 @@ export const signInWithAuthCode = onCall(async (data, context) => {
       if (now < expirationDate) {
         if (code === codeData.code) {
           info("Good code", {structuredData: true});
-          const token = await admin.auth().createCustomToken(codeData.uid);
+          const token = await admin.auth().createCustomToken(codeDoc.id);
           await codeDoc.ref.delete();
           return token;
         } else {
