@@ -11,7 +11,7 @@ const { info } = functions.logger;
 // // Start writing Firebase Functions
 // // https://firebase.google.com/docs/functions/typescript
 
-export const signInWithAuthCode = onCall(async (data, context) => {
+export const login = onCall(async (data, context) => {
   if (data.code && typeof data.code === 'string') {
     const code : string = data.code;
     info("Code received: " + code, {structuredData: true});
@@ -42,7 +42,7 @@ export const signInWithAuthCode = onCall(async (data, context) => {
           return token;
         } else {
           info("Good code according to database, bad code according to logic", {structuredData: true});
-          throw new HttpsError('internal', 'There was an error. Please try again.');
+          throw new HttpsError('internal', 'Internal error.');
         }
       } else {
         info("Code has expired", {structuredData: true});
@@ -51,6 +51,6 @@ export const signInWithAuthCode = onCall(async (data, context) => {
       }
     }
   } else {
-    throw new HttpsError('invalid-argument', 'Bad Request. The function must be called with one string argument "code" containing the auth code.');
+    throw new HttpsError('invalid-argument', 'Bad Request.');
   }
 });
