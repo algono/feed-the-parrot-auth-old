@@ -13,6 +13,6 @@ Fue diseñado para mi Trabajo de Fin de Grado (TFG).
 - [App](https://github.com/algono/feed_the_parrot_app)
 - [Autenticación / Auth](https://github.com/algono/feed-the-parrot-auth)
 - Memoria / Paper
-  - PDF (aún no está disponible / not available yet)
+  - [PDF](http://hdl.handle.net/10251/174256)
   - [Fuente / Source](https://github.com/algono/feed-the-parrot-memoria)
 - [Defensa / Presentation](https://github.com/algono/feed-the-parrot-defensa)
